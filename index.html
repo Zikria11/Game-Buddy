@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Buddy - Your AI Gaming Companion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0033 50%, #000066 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Animated background particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #00ffff;
+            border-radius: 50%;
+            animation: float 6s infinite linear;
+            opacity: 0.6;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.6;
+            }
+            90% {
+                opacity: 0.6;
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        /* Header */
+        .header {
+            position: relative;
+            z-index: 10;
+            padding: 2rem;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+        }
+
+        .logo {
+            font-size: 3rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #00ffff, #ff00ff, #ffff00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            }
+            to {
+                text-shadow: 0 0 30px rgba(0, 255, 255, 0.8), 0 0 40px rgba(255, 0, 255, 0.3);
+            }
+        }
+
+        .tagline {
+            font-size: 1.2rem;
+            color: #b0b0ff;
+            opacity: 0;
+            animation: fadeInUp 1s ease-out 0.5s forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Main container */
+        .container {
+            position: relative;
+            z-index: 10;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Chat interface */
+        .chat-container {
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 20px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            backdrop-filter: blur(15px);
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: 0 20px 40px rgba(0, 255, 255, 0.1);
+            animation: slideInUp 1s ease-out;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .chat-messages {
+            height: 400px;
+            overflow-y: auto;
+            padding: 1rem;
+            border-radius: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            margin-bottom: 1rem;
+            scrollbar-width: thin;
+            scrollbar-color: #00ffff rgba(0, 0, 0, 0.3);
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #00ffff, #ff00ff);
+            border-radius: 10px;
+        }
+
+        .message {
+            margin: 1rem 0;
+            padding: 1rem;
+            border-radius: 15px;
+            animation: messageAppear 0.5s ease-out;
+        }
+
+        @keyframes messageAppear {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .user-message {
+            background: linear-gradient(45deg, #ff00ff, #8000ff);
+            margin-left: 20%;
+            text-align: right;
+        }
+
+        .bot-message {
+            background: linear-gradient(45deg, #00ffff, #0080ff);
+            margin-right: 20%;
+            color: #000;
+        }
+
+        .typing-indicator {
+            display: none;
+            margin-right: 20%;
+            padding: 1rem;
+            background: rgba(0, 255, 255, 0.2);
+            border-radius: 15px;
+            color: #00ffff;
+        }
+
+        .typing-dots {
+            display: inline-block;
+        }
+
+        .typing-dots span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00ffff;
+            margin: 0 2px;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+
+        /* Input area */
+        .input-area {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 1rem;
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 25px;
+            background: rgba(0, 0, 0, 0.5);
+            color: #ffffff;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input:focus {
+            border-color: #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+
+        .send-btn {
+            padding: 1rem 2rem;
+            background: linear-gradient(45deg, #00ffff, #ff00ff);
+            border: none;
+            border-radius: 25px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 255, 255, 0.3);
+        }
+
+        .send-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Quick suggestions */
+        .suggestions {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .suggestion-btn {
+            padding: 0.5rem 1rem;
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 20px;
+            color: #00ffff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .suggestion-btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        /* Features section */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .feature-card {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 2rem;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .feature-card:hover::before {
+            left: 100%;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: #00ffff;
+            box-shadow: 0 15px 30px rgba(0, 255, 255, 0.2);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #00ffff;
+        }
+
+        .feature-title {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+            color: #ffffff;
+        }
+
+        .feature-desc {
+            color: #b0b0ff;
+            line-height: 1.6;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+            
+            .chat-container {
+                padding: 1rem;
+            }
+            
+            .input-area {
+                flex-direction: column;
+            }
+            
+            .send-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated particles background -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">GAME BUDDY</div>
+        <div class="tagline">Your AI-Powered Gaming Companion</div>
+    </div>
+
+    <!-- Main container -->
+    <div class="container">
+        <!-- Chat interface -->
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot-message">
+                    <strong>🎮 Game Buddy:</strong> Welcome, gamer! I'm here to help you discover amazing games, get recommendations, and answer all your gaming questions. What type of gaming adventure are you looking for today?
+                </div>
+            </div>
+            
+            <div class="typing-indicator" id="typingIndicator">
+                <strong>🎮 Game Buddy is typing</strong>
+                <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+
+            <div class="suggestions">
+                <div class="suggestion-btn" onclick="sendSuggestion('Recommend me a new RPG game')">🗡️ RPG Games</div>
+                <div class="suggestion-btn" onclick="sendSuggestion('Best multiplayer games to play with friends')">👥 Multiplayer</div>
+                <div class="suggestion-btn" onclick="sendSuggestion('What are the latest game releases?')">🆕 New Releases</div>
+                <div class="suggestion-btn" onclick="sendSuggestion('Free games worth playing')">💰 Free Games</div>
+            </div>
+
+            <div class="input-area">
+                <input type="text" class="chat-input" id="chatInput" placeholder="Ask me about games, get recommendations, or chat about gaming..." />
+                <button class="send-btn" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+
+        <!-- Features section -->
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <div class="feature-title">Personalized Recommendations</div>
+                <div class="feature-desc">Get game suggestions tailored to your preferences, gaming history, and favorite genres.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <div class="feature-title">Game Analysis</div>
+                <div class="feature-desc">Detailed insights about gameplay mechanics, reviews, ratings, and what makes each game special.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🌟</div>
+                <div class="feature-title">Latest Updates</div>
+                <div class="feature-desc">Stay updated with new releases, patches, DLCs, and trending games in the community.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game responses database
+        const gameResponses = {
+            rpg: [
+                "For RPGs, I highly recommend checking out **The Witcher 3: Wild Hunt** - it's an epic fantasy adventure with incredible storytelling. **Baldur's Gate 3** is also amazing if you love tactical combat and deep character customization!",
+                "**Elden Ring** combines Dark Souls gameplay with an open world - it's challenging but incredibly rewarding. For a more classic experience, try **Divinity: Original Sin 2**.",
+                "If you enjoy JRPGs, **Persona 5 Royal** and **Final Fantasy XIV** are fantastic choices. **Disco Elysium** is perfect if you prefer story-heavy, dialogue-driven RPGs."
+            ],
+            multiplayer: [
+                "**Among Us** and **Fall Guys** are great for casual fun with friends. For competitive gaming, try **Valorant** or **Rocket League**.",
+                "**It Takes Two** is an amazing co-op adventure perfect for two players. **Overwatch 2** is great for team-based FPS action.",
+                "**Sea of Thieves** offers incredible pirate adventures with friends, while **Minecraft** remains the ultimate creative multiplayer experience."
+            ],
+            free: [
+                "**Genshin Impact** is a beautiful open-world RPG that's completely free-to-play. **Apex Legends** offers intense battle royale action.",
+                "**Fortnite** isn't just battle royale anymore - it has creative modes and tons of different game types. **Warframe** is an excellent free sci-fi shooter.",
+                "**League of Legends** and **Dota 2** are the kings of MOBA games, while **Path of Exile** is often called the best free RPG available."
+            ],
+            new: [
+                "Recent releases include **Hogwarts Legacy** for Harry Potter fans and **Atomic Heart** for retro-futuristic FPS action.",
+                "**Pizza Tower** is a fantastic indie platformer, and **Hi-Fi Rush** combines rhythm gameplay with stylish action.",
+                "Keep an eye on **Street Fighter 6** and **Diablo IV** - both are generating huge buzz in their respective communities!"
+            ],
+            default: [
+                "That's an interesting question! Gaming has so many amazing genres and experiences. What type of games do you usually enjoy?",
+                "I'd love to help you find the perfect game! Could you tell me more about your preferences - do you like action, strategy, story-driven games?",
+                "Gaming is such a vast world! Are you looking for something specific, or would you like me to suggest some popular games across different genres?"
+            ]
+        };
+
+        // Initialize particles
+        function createParticles() {
+            const particles = document.getElementById('particles');
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (Math.random() * 3 + 4) + 's';
+                particles.appendChild(particle);
+            }
+        }
+
+        // Send message function
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (message) {
+                addMessage(message, 'user');
+                input.value = '';
+                
+                // Show typing indicator
+                showTyping();
+                
+                // Generate response after delay
+                setTimeout(() => {
+                    hideTyping();
+                    const response = generateResponse(message);
+                    addMessage(response, 'bot');
+                }, 1500 + Math.random() * 1000);
+            }
+        }
+
+        // Send suggestion function
+        function sendSuggestion(suggestion) {
+            document.getElementById('chatInput').value = suggestion;
+            sendMessage();
+        }
+
+        // Add message to chat
+        function addMessage(message, sender) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            
+            if (sender === 'user') {
+                messageDiv.innerHTML = `<strong>You:</strong> ${message}`;
+            } else {
+                messageDiv.innerHTML = `<strong>🎮 Game Buddy:</strong> ${message}`;
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Generate AI response using advanced AI system
+        function generateResponse(message) {
+            return gameBuddyAI.processQuery(message);
+        }
+
+        // Show typing indicator
+        function showTyping() {
+            document.getElementById('typingIndicator').style.display = 'block';
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Hide typing indicator
+        function hideTyping() {
+            document.getElementById('typingIndicator').style.display = 'none';
+        }
+
+        // Enter key functionality
+        document.getElementById('chatInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+        });
+    </script>
+</body>
+</html>
